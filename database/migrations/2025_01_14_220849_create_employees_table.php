@@ -13,12 +13,14 @@ return new class extends Migration
     {
         Schema::create('employees', function (Blueprint $table) {
             $table->id();
-            $table->string('nome');
-            $table->string('cpf')->unique();
-            $table->string('cargo');
-            $table->string('departamento');
-            $table->string('id_cracha')->unique();
-            $table->string('foto')->nullable();
+            $table->string('name');
+            $table->boolean('active')->default(false);
+            $table->string('document')->unique();
+            $table->string('vehicle_plate');
+            $table->string('enterprise');
+            $table->string('department');
+            $table->string('code')->unique();
+            $table->string('picture')->nullable();
             $table->timestamps();
         });
     }

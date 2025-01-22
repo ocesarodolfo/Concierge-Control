@@ -10,30 +10,19 @@ class EmployeeController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Employee::query();
+        try{
+            $query = Employee::query();
 
-        if ($request->has('nome') && $request->nome != '') {
-            $query->where('nome', 'like', '%' . $request->nome . '%');
+            if ($request->has('filter_type') && $request->has('filter_value') && $request->filter_value != '') {
+                $query->where($request->filter_type, 'like', '%' . $request->filter_value . '%');
+            }
+
+            $employees = $query->paginate(10);
+
+            return view('employees.index', compact('employees'));
+        } catch (\Exception $exception) {
+            dd($exception);
         }
-
-        if ($request->has('cpf') && $request->cpf != '') {
-            $query->where('cpf', 'like', '%' . $request->cpf . '%');
-        }
-
-        if ($request->has('cargo') && $request->cargo != '') {
-            $query->where('cargo', 'like', '%' . $request->cargo . '%');
-        }
-
-        if ($request->has('departamento') && $request->departamento != '') {
-            $query->where('departamento', 'like', '%' . $request->departamento . '%');
-        }
-
-        if ($request->has('id_cracha') && $request->id_cracha != '') {
-            $query->where('id_cracha', 'like', '%' . $request->id_cracha . '%');
-        }
-
-        $employees = $query->paginate(10);
-        return view('employees.index', compact('employees'));
     }
 
     public function create()
@@ -43,22 +32,29 @@ class EmployeeController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'nome' => 'required|string|max:255',
-            'cpf' => 'required|string|max:14|unique:employees',
-            'cargo' => 'required|string|max:255',
-            'departamento' => 'required|string|max:255',
-            'id_cracha' => 'required|string|max:255|unique:employees',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+        try {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'document' => 'required|string|max:14|unique:employees',
+                'vehicle_plate' => 'nullable|string|max:255',
+                'active' => 'nullable|boolean',
+                'enterprise' => 'required|string|max:255',
+                'department' => 'required|string|max:255',
+                'code' => 'required|string|max:255|unique:employees',
+                'picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            ]);
 
-        $data = $request->all();
-        if ($request->hasFile('foto')) {
-            $data['foto'] = $request->file('foto')->store('fotos', 'public');
+            $data = $request->all();
+
+            if ($request->hasFile('picture')) {
+                $data['picture'] = $request->file('picture')->store('pictures', 'public');
+            }
+
+            Employee::create($data);
+            return redirect()->route('employees.index')->with('alert', ['class' => 'success', 'message' => 'Funcionário criado com sucesso!']);
+        } catch (\Exception $exception) {
+            dd($exception);
         }
-
-        Employee::create($data);
-        return redirect()->route('employees.index')->with('success', 'Funcionário criado com sucesso!');
     }
 
     public function show(Employee $employee)
@@ -74,32 +70,37 @@ class EmployeeController extends Controller
     public function update(Request $request, Employee $employee)
     {
         $request->validate([
-            'nome' => 'required|string|max:255',
-            'cpf' => 'required|string|max:14|unique:employees,cpf,' . $employee->id,
-            'cargo' => 'required|string|max:255',
-            'departamento' => 'required|string|max:255',
-            'id_cracha' => 'required|string|max:255|unique:employees,id_cracha,' . $employee->id,
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'name' => 'required|string|max:255',
+            'document' => 'required|string|max:14|unique:employees,document,' . $employee->id,
+            'vehicle_plate' => 'nullable|string|max:255',
+            'active' => 'nullable|boolean',
+            'enterprise' => 'required|string|max:255',
+            'department' => 'required|string|max:255',
+            'code' => 'required|string|max:255|unique:employees,code,' . $employee->id,
+            'picture' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         $data = $request->all();
-        if ($request->hasFile('foto')) {
-            if ($employee->foto) {
-                Storage::disk('public')->delete($employee->foto);
+        if ($request->hasFile('picture')) {
+            if ($employee->picture) {
+                if(!Storage::disk('public')->delete($employee->picture))
+                    return redirect()->route('employees.index')->with('alert', ['class' => 'red', 'message' => 'Erro ao excluir foto do usuário']);
             }
-            $data['foto'] = $request->file('foto')->store('fotos', 'public');
+            $data['picture'] = $request->file('picture')->store('pictures', 'public');
         }
 
         $employee->update($data);
-        return redirect()->route('employees.index')->with('success', 'Funcionário atualizado com sucesso!');
+        return redirect()->route('employees.index')->with('alert', ['class' => 'success', 'message' => 'Funcionário atualizado com sucesso!']);
     }
 
     public function destroy(Employee $employee)
     {
-        if ($employee->foto) {
-            Storage::disk('public')->delete($employee->foto);
+        if ($employee->picture) {
+            if(!Storage::disk('public')->delete($employee->picture)) {
+                return redirect()->route('employees.index')->with('alert', ['class' => 'red', 'message' => 'Erro ao excluir foto do usuário']);
+            }
         }
         $employee->delete();
-        return redirect()->route('employees.index')->with('success', 'Funcionário excluído com sucesso!');
+        return redirect()->route('employees.index')->with('alert', ['class' => 'success', 'message' => 'Funcionário excluído com sucesso!']);
     }
 }

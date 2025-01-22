@@ -10,11 +10,13 @@ class Employee extends Model
     use HasFactory;
 
     protected $fillable = [
-        'nome',
-        'cpf',
-        'cargo',
-        'departamento',
-        'id_cracha',
-        'foto',
+        'name',
+        'document',
+        'active',
+        'vehicle_plate',
+        'enterprise',
+        'department',
+        'code',
+        'picture',
     ];
 }
